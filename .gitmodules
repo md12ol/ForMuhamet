@@ -1,0 +1,6 @@
+[submodule "Graph"]
+	path = Graph
+	url = git@github.com:md12ol/Graph.git
+[submodule "SDA"]
+	path = SDA
+	url = git@github.com:md12ol/SDA.git
