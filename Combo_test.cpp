@@ -17,5 +17,19 @@ int main() {
      * 0 0 0 0
      *
      * In general, a graph with N nodes needs N*(N-1)/2 weights to store all the possible edges.
+     * NUMER OF WEIGHTS == NUMBER OF EDGES? or is it because edge with weight = 0 ist not an existing edge but still counts as weight
     */
+    SDA sda_test(3, 3, 2, 6);
+
+    vector<int> output(6);
+
+    sda_test.fillOutput(output, true, std::cout);
+
+    Graph graph_test(4);
+
+    graph_test.fill(output, false);
+
+    graph_test.print(cout);
+    return 0;
+
 }
