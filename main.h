@@ -70,21 +70,21 @@ double targetProfile[profLen + 1];  // Profile dictionary
 // Epidemic Variants Variables
 int bestVarCount;                       // The Number of Variants in the Best Epidemic
 int bestVarParents[maxNumVars];         // The Parents of Each Variant in the Best Epidemic
-int bestVarStarts[maxNumVars];           // The Variant Lengths (start, end) for Variants in the Best Epidemic
+int bestVarStarts[maxNumVars];          // The Variant Lengths (start, end) for Variants in the Best Epidemic
 vector<int> bestVarProfs[maxNumVars];   // The Variant Profiles for the Variants in the Best Epidemic
-vector<int> bestVarDNAs[maxNumVars];  // The Variant DNA Strings for the Variants in the Best Epidemic
+vector<int> bestVarDNAs[maxNumVars];    // The Variant DNA Strings for the Variants in the Best Epidemic
 double bestVarAlphas[maxNumVars];
 int bestVarSeverity[DNALen];
-double newVarProb;                     // Probability of Generating a new Variant
+double newVarProb;                      // Probability of Generating a new Variant
 bool varCoupled;
 double varAlphaDelta;
 int minEdits;                           // Minimum Number of Edits to New Variant String
 int maxEdits;                           // Maximum Number of Edits to New Variant String
 
 // Other Variables
-char outRoot[50] = "./Output/";     // The Root Output Directory
-string pathToOut;                // Variable to Store Path to Output for Opening File Streams
-const static bool diagFill = true;  // Should the SDA Fill the UTAM Diagonally
+char outRoot[50] = "./Output/";         // The Root Output Directory
+string pathToOut;                       // Variable to Store Path to Output for Opening File Streams
+const static bool diagFill = true;      // Should the SDA Fill the UTAM Diagonally
 Graph network(numNodes);
 vector<int> SDAOutput;
 vector<int> epiProfile;
