@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30.5)
-project(SDA)
+project(ForMuhamet)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 23)
