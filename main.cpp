@@ -168,6 +168,7 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
     initAlg();
     cmdLineIntro(cout);
 
+    // Actually start the EA
     for (int run = initRunNum; run < initRunNum + runs; run++) {
         oss.str("");
         oss.clear();
