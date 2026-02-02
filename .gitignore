@@ -1,0 +1,23 @@
+# --- CLion & IDE  ---
+.idea/
+cmake-build-debug/
+cmake-build-release/
+.vscode/
+
+# --- CMake ---
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# --- Kompilierte Dateien (C++) ---
+*.o
+*.a
+*.so
+*.dylib
+*.inc
+*.gch
+
+# --- ausführbare Datei (Exe) ---
+pagmo_sga
+vcpkg/
