@@ -97,18 +97,16 @@ struct sda_epi_length_problem {
         Graph g(n_nodes);
         g.fill(weights, true);
 
-        double alpha = 0.5;
-        std::vector<int> epiProfile(2000, 0);
-        int totInf = 0;
-
-
-        //for (int sim = 0; sim < RUN_SIM, sim++) {
-           // epiLenSingle = g.SIR(0, alpha, epiProfile, totInf);
-          //  epilens
-       // }
-        int epiLen = g.SIR(0, alpha, epiProfile, totInf);
-
-        return { -static_cast<double>(epiLen) };
+        long epiLenSum = 0;
+        for (int sim = 0; sim < RUN_SIM; sim++) {
+            double alpha = 0.5;
+            std::vector<int> epiProfile(2000, 0);
+            int totInf = 0;
+            int epiLenSingle = g.SIR(0, alpha, epiProfile, totInf);
+            epiLenSum = epiLenSum + epiLenSingle;
+        }
+        double epiLenAvg = static_cast<double>(epiLenSum) / RUN_SIM;
+        return { -static_cast<double>(epiLenAvg) };
     }
 
     // number of genes

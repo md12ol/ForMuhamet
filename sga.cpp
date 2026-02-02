@@ -26,7 +26,7 @@ std::mt19937 rng;
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
 const int POP_SIZE = 50;
-const int GENERATIONS = 200;
+const int GENERATIONS = 5000;
 const int RUNS = 5;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
