@@ -146,6 +146,12 @@ int SDA::setGenes(const vector<double> &genes) {
     if (geneIdx % 2 == 1) {
         test = 1;
     }
+    // Responses can be 1 or 2 characters, we may skip the second character of the response (which could be even or odd indices)
+    bool checkOdd = true; // Assume first index is even, so we check odds
+    if (geneIdx % 2 == 1) { // If first index is odd, we check evens
+        checkOdd = false;
+    }
+
     // 3. responses
     for (int state = 0; state < numStates; ++state) {
         for (int trans = 0; trans < numChars; ++trans) {
@@ -154,18 +160,16 @@ int SDA::setGenes(const vector<double> &genes) {
                 if (geneIdx < genes.size()) {
                     double geneVal = genes[geneIdx];
                     int val = 0;
-                    if (geneIdx % 2 != test) {             // this ensures that every second digit of the response
+                    if (geneIdx % 2 == checkOdd) {             // this ensures that every second digit of the response
                         if (geneVal > 0.5) {            // has a 50% chance to be considered
                             geneIdx++;
                             continue;
                         }
+                        if (geneVal < 0.03) {
+                            val = 1;
+                        }
                         else {
-                            if (geneVal < 0.03) {
-                                val = 1;
-                            }
-                            else {
-                                val = 0;
-                            }
+                            val = 0;
                         }
                     }else {
                         // defining a threshold
@@ -175,8 +179,6 @@ int SDA::setGenes(const vector<double> &genes) {
                             val = 0;
                         }
                     }
-
-
 
                     responses[state][trans].push_back(val);
                     geneIdx++;
