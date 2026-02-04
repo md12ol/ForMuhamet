@@ -26,25 +26,23 @@ std::mt19937 rng;
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
 const int POP_SIZE = 50;
-const int GENERATIONS = 5000;
+const int GENERATIONS = 10000;
 const int RUNS = 5;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
 
-
 const int TOURNAMENT_SIZE = 7;
 const double CROSSOVER_RATE = 1.0;
+const int maxMuts = 2;
 
 // Mutation:
 // og code: maxMuts = 2 (at 73 genes) -> about 2.7%
-
-const double MUTATION_RATE = 0.04;
-
+// MUTATION_RATE now gets calculated by maxMuts divided by vector size
+const double MUTATION_RATE = static_cast<double>(maxMuts) / (1 + (NUM_STATES * NUM_CHARS) + (NUM_STATES * NUM_CHARS * MAX_RESP_LEN));
+//const double MUTATION_RATE = 0.04;
 int main() {
-
-    pagmo::random_device::set_seed(42);
+    pagmo::random_device::set_seed(42);     // set seed for random number generator
     rng.seed((42));
-
     cout << "=== replication of OG code with PAGMO (SGA) ===" << endl;
     cout << "Nodes: " << NUM_NODES << " | States: " << NUM_STATES << endl;
     cout << "Pop: " << POP_SIZE << " | Gens: " << GENERATIONS << endl;
@@ -80,27 +78,23 @@ int main() {
             archi.evolve(genPerStep);
             archi.wait_check();
 
+            // 1. get the population
             pagmo::population pop = (*archi.begin()).get_population();
 
-            // 2. Die Fitness-Werte aller 50 Individuen holen
-            // Pagmo gibt das als vector<vector<double>> zurück (weil es Multi-Objective sein könnte)
+            // 2. getting all the fitness values
+            // Pagmo gives us vector<vector<double>> (since it could be mo)
             auto pagmo_fits = pop.get_f();
 
-            // 3. Umwandeln in eine einfache Liste (vector<double>) für deine Statistik-Funktion
+            // 3.transform into list (vector<double>) --> getting ready for stats
             std::vector<double> currentFits;
             currentFits.reserve(pagmo_fits.size());
 
             for(const auto& f : pagmo_fits) {
-                // Wir nehmen f[0], weil wir nur ein Ziel haben (Epi-Length).
-                // WICHTIG: Pagmo minimiert oft. Wenn deine Fitness negativ ist, musst du hier evtl. das Vorzeichen drehen,
-                // je nachdem wie du calcStats gebaut hast (biggerBetter).
                 currentFits.push_back( -f[0] );
             }
 
-            // 4. Jetzt deine Statistik-Funktion aufrufen
             FitnessStats stats = calcStats(currentFits);
 
-            // 5. Ausgeben
             cout << "Gen " << (i+1)*genPerStep
                  << ": Best=" << stats.best
                  << ", Worst=" << stats.worst

@@ -17,18 +17,17 @@ struct FitnessStats {
     double worst = 0.0;
 };
 
-// Diese Funktion nimmt direkt deine Fitness-Werte (keine Indizes mehr!)
+// this function directly take the fitness values and gets us the stats we want to get
+// OG code but without biggerbetter since we want to maximize now
 FitnessStats calcStats(const std::vector<double> &fits) {
     if (fits.empty()) return {0.0, 0.0, 0.0, 0.0, 0.0};
 
     double sum = 0.0;
-    // Wir nutzen hier 'double' Limits für maximale Präzision
     double bestVal = fits[0];
     double worstVal = fits[0];
 
     for (double val : fits) {
         sum += val;
-        // Best/Worst Logik
         if (val > bestVal) bestVal = val;
         if (val < worstVal) worstVal = val;
     }
@@ -98,6 +97,8 @@ struct sda_epi_length_problem {
         g.fill(weights, true);
 
         long epiLenSum = 0;
+
+        // run the simulation RUN_SIM - times and resetting the graph before each simulation
         for (int sim = 0; sim < RUN_SIM; sim++) {
             double alpha = 0.5;
             std::vector<int> epiProfile(2000, 0);

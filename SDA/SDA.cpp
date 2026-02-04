@@ -142,19 +142,20 @@ int SDA::setGenes(const vector<double> &genes) {
             }
         }
     }
-
+    int test = 0;
+    if (geneIdx % 2 == 1) {
+        test = 1;
+    }
     // 3. responses
     for (int state = 0; state < numStates; ++state) {
         for (int trans = 0; trans < numChars; ++trans) {
             responses[state][trans].clear();
-
             for (int k = 0; k < maxRespLen; ++k) {
                 if (geneIdx < genes.size()) {
                     double geneVal = genes[geneIdx];
                     int val = 0;
-
-                    if (geneIdx % 2 == 0) {             // this ensures that every second
-                        if (geneVal > 0.5) {
+                    if (geneIdx % 2 != test) {             // this ensures that every second digit of the response
+                        if (geneVal > 0.5) {            // has a 50% chance to be considered
                             geneIdx++;
                             continue;
                         }
