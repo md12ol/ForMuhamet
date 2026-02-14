@@ -10,6 +10,7 @@
 // Pagmo
 #include <pagmo/algorithm.hpp>
 #include <pagmo/algorithms/sga.hpp>
+//#include <pagmo/algorithms/sade.hpp>
 #include <pagmo/archipelago.hpp>
 #include <pagmo/problem.hpp>
 
@@ -27,13 +28,17 @@ const int NUM_NODES = 256;
 const int NUM_STATES = 12;
 const int POP_SIZE = 50;
 const int GENERATIONS = 10000;
-const int RUNS = 5;
+const int RUNS = 30;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
+
+const int RUN_SIM = 100;
 
 const int TOURNAMENT_SIZE = 7;
 const double CROSSOVER_RATE = 1.0;
 const int maxMuts = 2;
+
+
 
 // Mutation:
 // og code: maxMuts = 2 (at 73 genes) -> about 2.7%
@@ -48,6 +53,13 @@ int main() {
     cout << "Pop: " << POP_SIZE << " | Gens: " << GENERATIONS << endl;
     cout << "Mutation Rate: " << MUTATION_RATE << " (per Gen)" << endl;
 
+    vector<SDA> bestSDAs;
+    vector<double> sdaEpiAvg;
+    sdaEpiAvg.reserve(RUNS);
+    vector<double> sdaEpiAvgChamps;
+    sdaEpiAvgChamps.reserve(RUNS);
+    double epiLenAvg = 0.0;
+
 
     for (int run = 1; run <= RUNS; ++run) {
         cout << "\n--- Run " << run << " of " << RUNS << " ---" << endl;
@@ -57,21 +69,26 @@ int main() {
 
         // 2. we tell pagmo to use SGA (SGA - Simple Genetic Algorithm)
         // sga(gen_per_step, cr, m, param_m, param_c, tournament_size)
+//        pagmo::algorithm algo{pagmo::sade(1)};
         pagmo::algorithm algo{pagmo::sga(
-            1,                  // generation per step
-            CROSSOVER_RATE,     // 1, we always do crossover
-            10.0,               // crossover distribution with 10 as standard (how much we mix)
-            MUTATION_RATE,
-            10.0,       // mutation distribution also standard (how much do we change the values)
-            (unsigned)TOURNAMENT_SIZE
-        )};
+                    1,                          // gen (Generationen pro Step)
+                    CROSSOVER_RATE,             // cr
+                    2.0,                       // eta_c (Distribution Index Crossover)
+                    MUTATION_RATE,              // m
+                    1.0,                       // param_m (Distribution Index Mutation) - je kleiner, desto "wilder"
+                    (unsigned)TOURNAMENT_SIZE,  // param_s (Tournament Size)
+                    "sbx",              // crossover strategy (Standard)
+                    "polynomial",               // mutation strategy (Standard)
+                    "tournament",               // selection strategy (Standard)
+                    1u                          // <--- n_elite: HIER IST DER SCHLÜSSEL! (1 Champion überlebt)
+                )};
 
         // 3. group of island --> 1u means we want 1 island, algo means that we follow the rules of sga, p is problem we have
         pagmo::archipelago archi{1u, algo, p, (unsigned)POP_SIZE};
 
 
 
-        int steps = 100; // 10 steps of 1000 gens
+        int steps = 10; // 10 steps of 1000 gens
         int genPerStep = GENERATIONS / steps;
 
         for(int i=0; i<steps; ++i) {
@@ -110,10 +127,62 @@ int main() {
         double finalBest = -(*archi.begin()).get_population().champion_f()[0];
         cout << ">>> RUN " << run << " FINISH. BEST: " << finalBest << endl;
         std::vector<double> bestRawSDA = (*archi.begin()).get_population().champion_x();
-        SDA sdaBEST(NUM_STATES, NUM_CHARS, MAX_RESP_LEN, NUM_STATES * (NUM_STATES - 1)/2);
+
+        cout << ">>> Champion Genes: { ";
+        for (size_t i = 0; i < bestRawSDA.size(); ++i) {
+            cout << bestRawSDA[i];
+            if (i < bestRawSDA.size() - 1) cout << ", ";
+        }
+        cout << " }" << endl;
+
+        SDA sdaBEST(NUM_STATES, NUM_CHARS, MAX_RESP_LEN, NUM_NODES * (NUM_NODES - 1)/2);
         sdaBEST.setGenes(bestRawSDA);
         sdaBEST.print(std::cout);
-    }
 
+        if (finalBest > 0) {
+            sdaEpiAvg.push_back(finalBest);
+            bestSDAs.reserve(RUNS);
+            bestSDAs.push_back(sdaBEST);
+        } else {
+            cout << ">>> SKIPPING RESULT (Penalty/Necrotic)" << endl;
+        }
+    }
+    cout << "\n" << std::left
+             << std::setw(4) << "Run" << " | "
+             << std::setw(13) << "Best Length" << " | "
+             << "Average after " << RUN_SIM << " Simulations" << endl;
+    cout << std::string(60, '-') << endl;
+
+    std::vector<int> weights(NUM_NODES * (NUM_NODES - 1) / 2);
+    for (int sdaNr = 0; sdaNr < bestSDAs.size(); ++sdaNr) {
+        const_cast<SDA&>(bestSDAs[sdaNr]).fillOutput(weights, false, std::cout);
+        Graph g(NUM_NODES);
+        g.fill(weights, true);
+
+        long epiLenSum = 0;
+        // run the simulation RUN_SIM - times and resetting the graph before each simulation
+        for (int sim = 0; sim < RUN_SIM; sim++) {
+            double alpha = 0.5;
+            vector<int> epiProfile(2000, 0);
+            int totInf = 0;
+            int epiLenSingle = g.SIR(0, alpha, epiProfile, totInf);
+            epiLenSum = epiLenSum + epiLenSingle;
+        }
+        epiLenAvg = static_cast<double>(epiLenSum) / RUN_SIM;
+        sdaEpiAvgChamps.push_back(epiLenAvg);
+        cout << std::left
+                     << std::setw(4) << (sdaNr + 1) << " | "
+                     << std::setw(13) << std::fixed << std::setprecision(2) << sdaEpiAvg[sdaNr] << " | "
+                     << std::fixed << epiLenAvg << endl;
+    }
+    cout << "\nValid Runs: " << bestSDAs.size() << " / " << RUNS << endl;
+
+    if (!bestSDAs.empty()) {
+        FitnessStats champStats = calcStats(sdaEpiAvgChamps);
+        cout << "\nStats of best SDAs in " << bestSDAs.size() << " valid runs." << endl;
+        cout << "\nAverage mean: " << champStats.mean;
+        cout << "\nStdDev: " << champStats.stdDev;
+        cout << "\nCI95: " << champStats.ci95;
+    }
     return 0;
 }

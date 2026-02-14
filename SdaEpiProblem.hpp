@@ -57,7 +57,7 @@ struct sda_epi_length_problem {
     // consts as in og code
     const int NUM_CHARS = 2;
     const int MAX_RESP_LEN = 2;
-    const int RUN_SIM = 5;
+    const int RUN_SIM = 30;
 
     sda_epi_length_problem(int nodes = 256, int states = 12)
         : n_nodes(nodes), n_states(states) {}
