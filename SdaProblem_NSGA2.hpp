@@ -1,5 +1,5 @@
-#ifndef SDA_EPI_PROBLEM_HPP
-#define SDA_EPI_PROBLEM_HPP
+#ifndef SDA_PROBLEM_NSGA2_HPP
+#define SDA_PROBLEM_NSGA2_HPP
 
 #include <pagmo/problem.hpp>
 #include <vector>

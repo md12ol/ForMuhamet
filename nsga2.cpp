@@ -18,7 +18,7 @@
 #include <pagmo/problem.hpp>
 
 // Bridge
-#include "SdaProblem_SGA.hpp"
+#include "SdaProblem_NSGA2.hpp"
 #include "rng.h"
 #include "SDA/SDA.h"
 #include "Graph/Graph.h"
