@@ -1,13 +1,13 @@
-#ifndef SDA_PROBLEM_NSGA2_HPP
-#define SDA_PROBLEM_NSGA2_HPP
+#ifndef SDA_PROBLEM_SGA_HPP
+#define SDA_PROBLEM_SGA_HPP
 
 #include <pagmo/problem.hpp>
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <iostream>
-#include "SDA/SDA.h"
-#include "Graph/Graph.h"
+#include "../SDA/SDA.h"
+#include "../Graph/Graph.h"
 
 struct FitnessStats {
     double mean = 0.0;

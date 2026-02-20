@@ -18,10 +18,10 @@
 #include <pagmo/problem.hpp>
 
 // Bridge
-#include "SdaProblem_SGA.hpp"
-#include "rng.h"
-#include "SDA/SDA.h"
-#include "Graph/Graph.h"
+#include "SdaProblem_NSGA2.hpp"
+#include "../rng.h"
+#include "../SDA/SDA.h"
+#include "../Graph/Graph.h"
 
 using namespace std;
 namespace fs = std::filesystem;

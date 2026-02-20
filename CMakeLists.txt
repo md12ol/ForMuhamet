@@ -26,7 +26,7 @@ add_executable(pagmo_test pagmoTest.cpp)
 target_link_libraries(pagmo_test PRIVATE Pagmo::pagmo)
 
 add_executable(pagmo_sga
-        sga.cpp
+        SGA/sga.cpp
         SDA/SDA.cpp
         Graph/Graph.cpp
         rng.h
@@ -35,7 +35,7 @@ target_link_libraries(pagmo_sga PRIVATE Pagmo::pagmo)
 
 # Das ist dein neues NSGA-II Programm
 add_executable(pagmo_nsga2
-        nsga2.cpp
+        NSGA2/nsga2.cpp
         SDA/SDA.cpp
         Graph/Graph.cpp
         rng.h
