@@ -32,9 +32,9 @@ std::mt19937 rng;
 // params identical to og code
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
-const int POP_SIZE = 52;
-const int GENERATIONS = 100;
-const int RUNS = 3;
+const int POP_SIZE = 50;
+const int GENERATIONS = 10000;
+const int RUNS = 30;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
 const int RUN_SIM = 30;
@@ -61,7 +61,7 @@ int main() {
     cout << "Mutation Rate: " << MUTATION_RATE << " (per Gen)" << endl;
 
     stringstream folderName_ss;
-    folderName_ss << "Output - " << POP_SIZE << "PS, "
+    folderName_ss << "Output (SGA) - " << POP_SIZE << "PS, "
    << GENERATIONS << "Mevs, "
    << TOURNAMENT_SIZE << "TS, "
    << MUTATION_RATE * 100 << "%MuR, "

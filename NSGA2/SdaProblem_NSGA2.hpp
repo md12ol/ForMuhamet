@@ -1,5 +1,5 @@
-#ifndef SDA_PROBLEM_NSGA2_HPP
-#define SDA_PROBLEM_NSGA2_HPP
+#ifndef SDA_EPI_PROBLEM_HPP
+#define SDA_EPI_PROBLEM_HPP
 
 #include <pagmo/problem.hpp>
 #include <vector>
@@ -51,7 +51,7 @@ FitnessStats calcStats(const std::vector<double> &fits) {
 // ---
 
 // Pagmo
-struct sda_epi_length_problem {
+struct sda_problem_nsga2 {
     int n_nodes;
     int n_states;
     int run_sim;
@@ -60,7 +60,8 @@ struct sda_epi_length_problem {
     const int MAX_RESP_LEN = 2;
     const int RUN_SIM = 30;
 
-    sda_epi_length_problem(int nodes = 256, int states = 12, int runs = 5)
+
+    sda_problem_nsga2(int nodes = 256, int states = 12, int runs = 5)
         : n_nodes(nodes), n_states(states), run_sim(runs) {}
 
 
@@ -70,7 +71,7 @@ struct sda_epi_length_problem {
         SDA sda(n_states, NUM_CHARS, MAX_RESP_LEN, outputLen);
 
         // add genes
-        const_cast<sda_epi_length_problem*>(this)->applyGenesToSDA(sda, x);
+        const_cast<sda_problem_nsga2*>(this)->applyGenesToSDA(sda, x);
 
         // generate output and count edges
         std::vector<int> weights(outputLen);
@@ -83,14 +84,16 @@ struct sda_epi_length_problem {
 
         // necrotic filter 2.0
         long minEdges = 1 * n_nodes;      // 256
+        //long maxEdges = 100 * n_nodes;      // test
         long maxEdges = 6 * n_nodes;      // 1536
+
 
         // if graph is nectrotic, we add a penalty and graph will not be built at all
         if (edgeCount < minEdges || edgeCount > maxEdges) {
             // instead of kicking out the necrotic graphs, we penalize them adding 1000 to the
             // absolut value of the difference between the edgecount and our border --> we give pagmo a direction so it knows that less edges can be better and vice versa
             double penalty = 1000.0 + std::abs(edgeCount - maxEdges);
-            return { penalty };
+            return { penalty, penalty };
         }
 
         // now we can start the simulation
@@ -108,7 +111,7 @@ struct sda_epi_length_problem {
             epiLenSum = epiLenSum + epiLenSingle;
         }
         double epiLenAvg = static_cast<double>(epiLenSum) / run_sim;
-        return { -static_cast<double>(epiLenAvg) };
+        return { -static_cast<double>(epiLenAvg), static_cast<double>(edgeCount) };
     }
 
     // number of genes
@@ -122,6 +125,10 @@ struct sda_epi_length_problem {
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const {
         auto n = get_nx();
         return {std::vector<double>(n, 0.0), std::vector<double>(n, 1.0)};
+    }
+
+    std::vector<double>::size_type get_nobj() const {
+        return 2;
     }
 
     // vector x to SDA

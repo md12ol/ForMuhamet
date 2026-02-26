@@ -16,6 +16,8 @@
 #include <pagmo/algorithms/nsga2.hpp>
 #include <pagmo/archipelago.hpp>
 #include <pagmo/problem.hpp>
+#include <pagmo/utils/multi_objective.hpp>
+#include <pagmo/utils/hypervolume.hpp>
 
 // Bridge
 #include "SdaProblem_NSGA2.hpp"
@@ -33,15 +35,14 @@ std::mt19937 rng;
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
 const int POP_SIZE = 52;
-const int GENERATIONS = 100;
-const int RUNS = 3;
+const int GENERATIONS = 51;
+const int RUNS = 2;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
 const int RUN_SIM = 30;
 
 const int RUN_SIM_Check = RUN_SIM * 2;
 
-const int TOURNAMENT_SIZE = 7;
 const double CROSSOVER_RATE = 1.0;
 const int maxMuts = 2;
 
@@ -61,9 +62,8 @@ int main() {
     cout << "Mutation Rate: " << MUTATION_RATE << " (per Gen)" << endl;
 
     stringstream folderName_ss;
-    folderName_ss << "Output - " << POP_SIZE << "PS, "
+    folderName_ss << "Output (NSGA2) - " << POP_SIZE << "PS, "
    << GENERATIONS << "Mevs, "
-   << TOURNAMENT_SIZE << "TS, "
    << MUTATION_RATE * 100 << "%MuR, "
    << CROSSOVER_RATE * 100 << "%CrR, "
     << RUN_SIM << "SEpis, "
@@ -84,6 +84,7 @@ int main() {
         cerr << "Error while creating folder: " << e.what() << std::endl;
     }
 
+
     vector<SDA> bestSDAs;
     vector<double> sdaEpiAvg;
     sdaEpiAvg.reserve(RUNS);
@@ -92,6 +93,11 @@ int main() {
     double epiLenAvg = 0.0;
 
     for (int run = 1; run <= RUNS; ++run) {
+
+        int currentSeed = 43 + run;
+        pagmo::random_device::set_seed(currentSeed);     // set seed for random number generator
+        rng.seed(currentSeed);
+
         stringstream runFile_ss;
         runFile_ss << "run" << run << ".csv";
         string runFile = runFile_ss.str();
@@ -102,172 +108,143 @@ int main() {
         if (fs::exists(runPath)) {
             continue;
         }
-        int currentSeed = 42 + run - 1;
-        pagmo::random_device::set_seed(currentSeed);     // set seed for random number generator
-        rng.seed(currentSeed);
+
 
         std::ofstream runData(runPath, std::ios::app);
 
-        runData << "Generation;BestFitness;WorstFitness;MeanFitness;StdDev;CI95\n";
-
-
-
+        runData << "Generation;ParetoLength_Edges;Hypervolume;CrowdingDistance" << endl;
 
 
         cout << "\n--- Run " << run << " of " << RUNS << " ---" << endl;
 
         // 1. we define a problem
-        pagmo::problem p{sda_epi_length_problem(NUM_NODES, NUM_STATES, RUN_SIM)};
+        pagmo::problem p{sda_problem_nsga2(NUM_NODES, NUM_STATES, RUN_SIM)};
 
-        // 2. we tell pagmo to use SGA (SGA - Simple Genetic Algorithm)
-        // sga(gen_per_step, cr, m, param_m, param_c, tournament_size)
-//        pagmo::algorithm algo{pagmo::sade(1)};
-        pagmo::algorithm algo{pagmo::sga(
-                    1,                          // gen (Generationen pro Step)
-                    CROSSOVER_RATE,             // cr
-                    2.0,                       // eta_c (Distribution Index Crossover)
-                    MUTATION_RATE,              // m
-                    1.0,                       // param_m (Distribution Index Mutation) - je kleiner, desto "wilder"
-                    (unsigned)TOURNAMENT_SIZE,  // param_s (Tournament Size)
-                    "sbx",              // crossover strategy (Standard)
-                    "polynomial",               // mutation strategy (Standard)
-                    "tournament",               // selection strategy (Standard)
-                    1u                          // <--- n_elite: HIER IST DER SCHLÜSSEL! (1 Champion überlebt)
-                )};
-
+        // 2. we tell pagmo to use NSGA2
+        // nsga2(gen_per_step, cr, param_c, m, param_m)
+        pagmo::algorithm algo{pagmo::nsga2(
+            1,
+            0.99,
+            2.0,
+            MUTATION_RATE,
+            1.0
+        )};
 
 
         // 3. group of island --> 1u means we want 1 island, algo means that we follow the rules of sga, p is problem we have
         pagmo::archipelago archi{1u, algo, p, (unsigned)POP_SIZE};
 
 
-
         int steps = 10; // 10 steps of 1000 gens
         int genPerStep = GENERATIONS / steps;
+
+
+        stringstream hyperconverge_ss;
+        hyperconverge_ss << "hypervolumeConvergence_run" << run << ".csv";
+        fs::path hyperPath = finalPath / hyperconverge_ss.str();
+        std::ofstream hyperConvergeData(hyperPath);
+
+        hyperConvergeData << "Generation_X;Hypervolume_Y;Spread\n";
+
 
         for(int i=0; i<steps; ++i) {
             archi.evolve(genPerStep);
             archi.wait_check();
 
-            // 1. get the population
             pagmo::population pop = (*archi.begin()).get_population();
 
-            // 2. getting all the fitness values
-            // Pagmo gives us vector<vector<double>> (since it could be mo)
-            auto pagmo_fits = pop.get_f();
+            // all fitness values of the pop and also the genes
+            auto fits = pop.get_f();
+            auto xs = pop.get_x();
 
-            // 3.transform into list (vector<double>) --> getting ready for stats
-            std::vector<double> currentFits;
-            currentFits.reserve(pagmo_fits.size());
+            // let pagmo sort the individuals
+            // output--> first element of tuple are all the different fronts (list of lists),
+            // second: how many dominate the individual (list of size 52),
+            // third: which one does the indivual dominate (list of lists),
+            // fourth: rank of all the individuals (list of size 52)
+            auto ndf_tuple = pagmo::fast_non_dominated_sorting(fits);
 
-            for(const auto& f : pagmo_fits) {
-                currentFits.push_back( -f[0] );
+            // take the first element --> list of all the SDAs sorted by their ranking
+            const auto &all_fronts = std::get<0>(ndf_tuple);
+
+            // out of this list we take the champions (non dominated solutions)
+            const auto &best_front_indices = all_fronts[0];
+
+            cout << "\n>>> Generation " << genPerStep * (i + 1) << " FINISH. Found " << best_front_indices.size() << " optimal trade-offs (Pareto Front)!" << endl;
+
+            runData << genPerStep * (i + 1) << ";{";
+
+            vector<vector<double>> champions_fitness;
+            // go through the champs
+            bool first = true;
+            for (auto idx : best_front_indices) {
+                double epiLen = -fits[idx][0];
+                double edges = fits[idx][1];
+                champions_fitness.push_back(fits[idx]);
+
+                cout << "Length: " << std::setw(8) << epiLen
+                     << " | Edges: " << edges << endl;
+                if (!first) {
+                    runData << ",";
+                }
+                runData << "(" << epiLen << "," << edges << ")";
+                first = false;
+            }
+            runData << "}" << endl;
+            vector<double> cdValuesFiltered;
+            if (champions_fitness.size() > 2) {
+                int infinite = 0;
+                vector<double> cdValues = pagmo::crowding_distance(champions_fitness);
+                for (int j=0; j < cdValues.size(); j++) {
+                    if (std::isinf(cdValues[j])) {
+                        infinite++;
+                    }else{
+                        cdValuesFiltered.push_back(cdValues[j]);
+                        if (j - infinite == 0) {
+                            cout << cdValues[j];
+                        }else {
+                            cout << ", " << cdValues[j];
+                        }
+                    }
+                }
             }
 
-            FitnessStats stats = calcStats(currentFits);
+            vector<double> ref_point = {0.0, 100000.0};
+            pagmo::hypervolume hv(champions_fitness);
+            double current_hv = hv.compute(ref_point);
 
-            cout << "Gen " << (i+1)*genPerStep
-                 << ": Best=" << stats.best
-                 << ", Worst=" << stats.worst
-                 << ", Mean=" << stats.mean
-                 << ", StdDev=" << stats.stdDev
-                 << ", CI95=" << stats.ci95 << endl;
+            FitnessStats cdStats = calcStats(cdValuesFiltered);
+
+            hyperConvergeData << genPerStep * (i + 1) << ";" << current_hv << ";" << cdStats.stdDev << endl;
 
 
-            runData << (1 + i) * genPerStep << ";"
-            << stats.best << ";"
-            << stats.worst << ";"
-            << stats.mean << ";"
-            << stats.stdDev << ";"
-            << stats.ci95 << "\n";
+            if (i == steps - 1){
+                cout << "\nBest SDAs found so far: " << endl;
 
-            runData.flush();
+                stringstream paretoFile_ss;
+                paretoFile_ss << "pareto_front_run" << run << ".csv";
+                fs::path paretoPath = finalPath / paretoFile_ss.str();
+                std::ofstream paretoData(paretoPath);
 
-            //double bestNow = -(*archi.begin()).get_population().champion_f()[0];
-            //cout << "Gen " << (i+1)*genPerStep << ": Best Epi-Length = " << bestNow << endl;
+                paretoData << "Length_X;Edges_Y\n";
+
+                for (auto idx : best_front_indices) {
+                    double epiLen = fits[idx][0];
+                    double edges = fits[idx][1];
+                    vector<double> &genes = xs[idx];
+
+                    cout << "Length: " << std::setw(8) << epiLen
+                         << " | Edges: " << std::setw(5) << edges << " | Champions Genes: {";
+                    for (int i = 0; i < genes.size(); ++i) {
+                        cout  << genes[i];
+                        if (i < genes.size() - 1) cout << ", ";
+                    }
+                    cout << "}" << endl;
+                    paretoData << epiLen << ";" << edges << endl;
+                }
+                paretoData.close();
+            }
         }
-        string bestRun = "best01.csv";
-        fs::path bestRunPath = finalPath / bestRun;
-        std::ofstream bestRunData(bestRunPath, std::ios::app);
-
-        // *archi.begin gives us first island, get pop gives us 50 individs, champion gives us the one with best fitness at 0
-        double finalBest = -(*archi.begin()).get_population().champion_f()[0];
-        cout << ">>> RUN " << run << " FINISH. BEST: " << finalBest << endl;
-        std::vector<double> bestRawSDA = (*archi.begin()).get_population().champion_x();
-
-        bestRunData << run << ". Run -> Best Fitness: " << finalBest
-        << "\n>>> Champion Genes: { ";
-        for (size_t i = 0; i < bestRawSDA.size(); ++i) {
-            bestRunData << bestRawSDA[i];
-            if (i < bestRawSDA.size() - 1) bestRunData << ", ";
-        }
-        bestRunData << " }" << endl;
-
-        cout << ">>> Champion Genes: { ";
-        for (size_t i = 0; i < bestRawSDA.size(); ++i) {
-            cout << bestRawSDA[i];
-            if (i < bestRawSDA.size() - 1) cout << ", ";
-        }
-        cout << " }" << endl;
-
-        SDA sdaBEST(NUM_STATES, NUM_CHARS, MAX_RESP_LEN, NUM_NODES * (NUM_NODES - 1)/2);
-        sdaBEST.setGenes(bestRawSDA);
-        sdaBEST.print(std::cout);
-        bestRunData << "SDA:\n";
-        sdaBEST.print(bestRunData);
-        std::vector<int> weights(NUM_NODES * (NUM_NODES - 1) / 2);
-        const_cast<SDA&>(sdaBEST).fillOutput(weights, false, std::cout);
-        Graph g(NUM_NODES);
-        g.fill(weights, true);
-        bestRunData << "Graph:\n";
-        g.print(bestRunData);
-        bestRunData << "\n";
-
-        if (finalBest > 0) {
-            sdaEpiAvg.push_back(finalBest);
-            bestSDAs.reserve(RUNS);
-            bestSDAs.push_back(sdaBEST);
-        } else {
-            cout << ">>> SKIPPING RESULT (Penalty/Necrotic)" << endl;
-        }
-
-    }
-    cout << "\n" << std::left
-             << std::setw(4) << "Run" << " | "
-             << std::setw(13) << "Best Length" << " | "
-             << "Average after " << RUN_SIM_Check << " Simulations" << endl;
-    cout << std::string(60, '-') << endl;
-
-    for (int sdaNr = 0; sdaNr < bestSDAs.size(); ++sdaNr) {
-        std::vector<int> weights(NUM_NODES * (NUM_NODES - 1) / 2);
-        const_cast<SDA&>(bestSDAs[sdaNr]).fillOutput(weights, false, std::cout);
-        Graph g(NUM_NODES);
-        g.fill(weights, true);
-
-        long epiLenSum = 0;
-        // run the simulation RUN_SIM - times and resetting the graph before each simulation
-        for (int sim = 0; sim < RUN_SIM_Check; sim++) {
-            double alpha = 0.5;
-            vector<int> epiProfile(2000, 0);
-            int totInf = 0;
-            int epiLenSingle = g.SIR(0, alpha, epiProfile, totInf);
-            epiLenSum = epiLenSum + epiLenSingle;
-        }
-        epiLenAvg = static_cast<double>(epiLenSum) / RUN_SIM_Check;
-        sdaEpiAvgChamps.push_back(epiLenAvg);
-        cout << std::left
-                     << std::setw(4) << (sdaNr + 1) << " | "
-                     << std::setw(13) << std::fixed << std::setprecision(2) << sdaEpiAvg[sdaNr] << " | "
-                     << std::fixed << epiLenAvg << endl;
-    }
-    cout << "\nValid Runs: " << bestSDAs.size() << " / " << RUNS << endl;
-
-    if (!bestSDAs.empty()) {
-        FitnessStats champStats = calcStats(sdaEpiAvgChamps);
-        cout << "\nStats of best SDAs in " << bestSDAs.size() << " valid runs." << endl;
-        cout << "\nAverage mean: " << champStats.mean;
-        cout << "\nStdDev: " << champStats.stdDev;
-        cout << "\nCI95: " << champStats.ci95;
     }
     return 0;
 }
