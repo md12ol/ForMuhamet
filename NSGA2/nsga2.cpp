@@ -35,8 +35,8 @@ std::mt19937 rng;
 // params identical to og code
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
-const int GENERATIONS = 200;
-const int RUNS = 5;
+const int GENERATIONS = 10000;
+const int RUNS = 30;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
 const int RUN_SIM = 30;
@@ -49,9 +49,6 @@ double MUTATION_RATE = static_cast<double>(maxMuts) / (1 + (NUM_STATES * NUM_CHA
 double CROSSOVER_RATE = 0.99;
 double ETA = 2.0;
 int NUM_ISLANDS = 1;
-
-
-
 
 // Mutation:
 // og code: maxMuts = 2 (at 73 genes) -> about 2.7%
@@ -77,21 +74,22 @@ int main(int argc, char* argv[]) {
         cout << "Example: ./pagmo_nsga2 52 0.05 0.5 2.0 1" << endl;
     }
 
-    cout << "=== replication of OG code with PAGMO (SGA) ===" << endl;
+    cout << "=== PAGMO (NSGA2) ===" << endl;
     cout << "Nodes: " << NUM_NODES << " | States: " << NUM_STATES << endl;
     cout << "Pop: " << POP_SIZE << " | Gens: " << GENERATIONS << endl;
     cout << "Mutation Rate: " << MUTATION_RATE << " (per Gen)" << endl;
     cout << "Crossover Rate: " << CROSSOVER_RATE << "(per Gen)" << endl;
 
     stringstream folderName_ss;
-    folderName_ss << "Output (NSGA2) - " << POP_SIZE << "PS, "
-   << GENERATIONS << "Mevs, "
-   << MUTATION_RATE * 100 << "%MuR, "
-   << CROSSOVER_RATE * 100 << "%CrR, "
-    << ETA << "ETA, "
-    << NUM_ISLANDS << "Islands, "
-    << RUN_SIM << "SEpis, "
-   << NUM_STATES << "ST";
+    folderName_ss << "Output (NSGA2) - "
+        << POP_SIZE << "PS, "
+       << GENERATIONS << "Mevs, "
+       << MUTATION_RATE * 100 << "%MuR, "
+       << CROSSOVER_RATE * 100 << "%CrR, "
+        << ETA << "ETA, "
+        << NUM_ISLANDS << "Islands, "
+        << RUN_SIM << "SEpis, "
+       << NUM_STATES << "ST";
 
     string outputFolder = folderName_ss.str();
 
