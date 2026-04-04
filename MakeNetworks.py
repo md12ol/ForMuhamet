@@ -1,6 +1,22 @@
 import os
 from graphviz import Graph
 
+folder_to_analyze = "Output - 123"
+
+'''
+For a particular folder we need to:
+1. Determine which of the particular lines has the best hypervolume
+2. Get a list of all the SDAs
+3. Sort this list of SDAs based on a decreasing of one of the objective functions [[(#edges, length), SDA], [(#edges, length), SDA]], etc.]
+4. For each SDA:
+    4.1. Convert the floating point representation into an SDA
+    4.2. Get the output from the SDA for a sufficient number of characters (n*(n-1)/2)
+    4.3. Input the characters into an adjacency matrix
+    4.4. Generate a network of that adjacency matrix (modify edge_list(...) below)
+    
+Note: if we have the folder "Output - 123" then just name the networks "Output - 123 - 1.png", "Output - 123 - 2.png", etc.
+'''
+
 
 '''
 Currently this method expects a string formatted as follows:
@@ -14,6 +30,7 @@ For example: the line '2 3 4' is the first line so it represents the edges for n
 And that means that node 1 has an edge going to nodes 2, 3, and 4
 '''
 def edge_list(edge_lists, verts: int):
+    # Make an adjacency matrix
     adjM = [[False for _ in range(verts)] for _ in range(verts)]
     for from_node, line in enumerate(edge_lists):
         line = line.rstrip()
@@ -28,6 +45,7 @@ def edge_list(edge_lists, verts: int):
             pass
         pass
 
+    # Get the list of edges: [[1, 3], [2, 7], etc.]
     edge_lists = []
     for row in range(verts):
         for col in range(row + 1, verts):
