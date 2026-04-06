@@ -9,6 +9,7 @@
 
 // Pagmo
 #include <pagmo/algorithm.hpp>
+#include <pagmo/batch_evaluators/thread_bfe.hpp>
 #include <pagmo/algorithms/sga.hpp>
 #include <pagmo/algorithms/nsga2.hpp>
 #include <pagmo/archipelago.hpp>
@@ -26,7 +27,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-std::mt19937 rng;
+thread_local std::mt19937 rng;
 
 // params identical to og code
 const int NUM_NODES = 256;
@@ -136,6 +137,7 @@ int main(int argc, char* argv[]) {
         // 2. we tell pagmo to use NSGA2
         // nsga2(gen_per_step, cr, param_c, m, param_m)
         pagmo::algorithm algo{pagmo::nsga2(1, CROSSOVER_RATE, ETA, MUTATION_RATE, ETA)};
+        algo.extract<pagmo::nsga2>()->set_bfe(pagmo::bfe{});
 
         pagmo::archipelago archi;
         unsigned pop_per_island = POP_SIZE / NUM_ISLANDS;
