@@ -55,14 +55,15 @@ struct sda_problem_nsga2 {
     int n_nodes;
     int n_states;
     int run_sim;
+    bool totInf_cost = false;
     // consts as in og code
     const int NUM_CHARS = 2;
     const int MAX_RESP_LEN = 2;
     const int RUN_SIM = 30;
 
 
-    sda_problem_nsga2(int nodes = 256, int states = 12, int runs = 5)
-        : n_nodes(nodes), n_states(states), run_sim(runs) {}
+    sda_problem_nsga2(int nodes = 256, int states = 12, int runs = 5, bool totInfcost = false)
+        : n_nodes(nodes), n_states(states), run_sim(runs), totInf_cost(totInfcost) {}
 
 
     std::vector<double> fitness(const std::vector<double> &x) const {
@@ -83,9 +84,9 @@ struct sda_problem_nsga2 {
         }
 
         // necrotic filter 2.0
-        long minEdges = 1 * n_nodes;      // 256
-        //long maxEdges = 100 * n_nodes;      // test
-        long maxEdges = 6 * n_nodes;      // 1536
+        long minEdges = 1 * n_nodes;      // 256 -> bare minimum
+        //long maxEdges = (255 * n_nodes)/2;      // the absolute max
+        long maxEdges = 6 * n_nodes;      //
 
 
         // if graph is nectrotic, we add a penalty and graph will not be built at all
@@ -101,6 +102,7 @@ struct sda_problem_nsga2 {
         g.fill(weights, true);
 
         long epiLenSum = 0;
+        long totInfSum = 0;
 
         // run the simulation run_sim - times and resetting the graph before each simulation
         for (int sim = 0; sim < run_sim; sim++) {
@@ -109,9 +111,16 @@ struct sda_problem_nsga2 {
             int totInf = 0;
             int epiLenSingle = g.SIR(0, alpha, epiProfile, totInf);
             epiLenSum = epiLenSum + epiLenSingle;
+            totInfSum = totInfSum + totInf;
         }
         double epiLenAvg = static_cast<double>(epiLenSum) / run_sim;
-        return { -static_cast<double>(epiLenAvg), static_cast<double>(edgeCount) };
+        double totInfAvg = static_cast<double>(totInfSum) / run_sim;
+
+        if (totInf_cost == false) {
+            return { -static_cast<double>(epiLenAvg), static_cast<double>(edgeCount) };
+        } else {
+            return { -static_cast<double>(totInfAvg), static_cast<double>(edgeCount) };
+        }
     }
 
     // number of genes

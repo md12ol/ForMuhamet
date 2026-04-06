@@ -160,6 +160,13 @@ int SDA::setGenes(const vector<double> &genes) {
                 if (geneIdx < genes.size()) {
                     double geneVal = genes[geneIdx];
                     int val = 0;
+
+                    // if (geneVal < 0.5) {
+                    //     val = 1;
+                    // } else {
+                    //     val = 0;
+                    // }
+
                     if (geneIdx % 2 == checkOdd) {             // this ensures that every second digit of the response
                         if (geneVal > 0.5) {            // has a 50% chance to be considered
                             geneIdx++;
@@ -182,8 +189,10 @@ int SDA::setGenes(const vector<double> &genes) {
 
                     responses[state][trans].push_back(val);
                     geneIdx++;
+
                 }
             }
+
         }
     }
     return 0;
@@ -415,6 +424,7 @@ int SDA::fillOutput(vector<int> &output, const bool printToo, ostream &outStream
         cout << "Error in SDA Class: fillOutput(...): this SDA has not been initialized.";
         return -1;
     }
+
     if (output.capacity() < outputLen) {
         cout << "Error in SDA Class: fillOutput(...): output vector capacity is " << output.capacity();
         cout << " but the outputLen is " << outputLen << "." << endl;

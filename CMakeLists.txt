@@ -50,3 +50,10 @@ add_executable(Test
         rng.h
 )
 
+add_executable(extract_networks
+        NSGA2/extract_best_networks.cpp
+        SDA/SDA.cpp
+        Graph/Graph.cpp
+        rng.h
+)
+
