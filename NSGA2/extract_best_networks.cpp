@@ -13,7 +13,7 @@
 using namespace std;
 
 
-std::mt19937 rng;
+thread_local std::mt19937 rng;
 
 // params for the sda
 const int NUM_NODES = 256;

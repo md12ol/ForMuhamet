@@ -1,6 +1,6 @@
 #include "main.h"
 
-std::mt19937 rng;
+thread_local std::mt19937 rng;
 
 /**
  * Run the program: initialize a population, evolve the population for the specified number of mating events using
