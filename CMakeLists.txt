@@ -40,8 +40,17 @@ add_executable(pagmo_nsga2
         Graph/Graph.cpp
         rng.h
 )
-# Pagmo auch hier verlinken!
 target_link_libraries(pagmo_nsga2 PRIVATE Pagmo::pagmo)
+
+# MOEAD Programm
+add_executable(pagmo_moead
+        MOEAD/moead.cpp
+        SDA/SDA.cpp
+        Graph/Graph.cpp
+        rng.h
+)
+target_link_libraries(pagmo_moead PRIVATE Pagmo::pagmo)
+
 
 add_executable(Test
         main.cpp

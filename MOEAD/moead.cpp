@@ -9,8 +9,7 @@
 
 // Pagmo
 #include <pagmo/algorithm.hpp>
-#include <pagmo/algorithms/sga.hpp>
-#include <pagmo/algorithms/nsga2.hpp>
+#include <pagmo/algorithms/moead.hpp>
 #include <pagmo/archipelago.hpp>
 #include <pagmo/problem.hpp>
 #include <pagmo/utils/multi_objective.hpp>
@@ -18,7 +17,7 @@
 #include <pagmo/topologies/ring.hpp>
 
 // Bridge
-#include "SdaProblem_NSGA2.hpp"
+#include "SdaProblem_MOEAD.hpp"
 #include "../rng.h"
 #include "../SDA/SDA.h"
 #include "../Graph/Graph.h"
@@ -31,19 +30,19 @@ std::mt19937 rng;
 // params identical to og code
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
-const int GENERATIONS = 101;
-const int RUNS = 3;
+const int GENERATIONS = 20000;
+const int RUNS = 30;
 const int NUM_CHARS = 2;
 const int MAX_RESP_LEN = 2;
 const int RUN_SIM = 30;
 const double ETA = 2.0;
 int NUM_ISLANDS = 1;
-const bool ISTOTINF_COST = false;
+const bool ISTOTINF_COST = true;
 
 const int RUN_SIM_Check = RUN_SIM * 2;
 //const int maxMuts = 2;
 
-const int POP_SIZE = 52;
+const int POP_SIZE = 496;
 
 // Mutation:
 // og code: maxMuts = 2 (at 73 genes) -> about 2.7%
@@ -62,20 +61,20 @@ int main(int argc, char* argv[]) {
 
     } else {
         cout << "Warning: No parameters provided. Using default values." << endl;
-        cout << "Usage: ./pagmo_nsga2 [PopSize] [MutRate]" << endl;
+        cout << "Usage: ./pagmo_moead [PopSize] [MutRate]" << endl;
     }
 
-    cout << "=== PAGMO (NSGA2) ===" << endl;
+    cout << "=== PAGMO (MOEAD) ===" << endl;
     cout << "Nodes: " << NUM_NODES << " | States: " << NUM_STATES << endl;
     cout << "Pop: " << POP_SIZE << " | Gens: " << GENERATIONS << endl;
 
     stringstream folderName_ss;
     if (ISTOTINF_COST) {
-        folderName_ss << "Output (NSGA2 - spread vs cost) - " << POP_SIZE << "PS, " << GENERATIONS << "Mevs, "
+        folderName_ss << "Output (MOEAD - spread vs cost) - " << POP_SIZE << "PS, " << GENERATIONS << "Mevs, "
                       << MUTATION_RATE * 100 << "%MuR, " << CROSSOVER_RATE * 100 << "%CrR, "
                       << ETA << "ETA, " << NUM_ISLANDS << "Islands, " << RUN_SIM << "SEpis, " << NUM_STATES << "ST";
     }else {
-        folderName_ss << "Output (NSGA2 - length vs cost) - " << POP_SIZE << "PS, " << GENERATIONS << "Mevs, "
+        folderName_ss << "Output (MOEAD - length vs cost) - " << POP_SIZE << "PS, " << GENERATIONS << "Mevs, "
               << MUTATION_RATE * 100 << "%MuR, " << CROSSOVER_RATE * 100 << "%CrR, "
               << ETA << "ETA, " << NUM_ISLANDS << "Islands, " << RUN_SIM << "SEpis, " << NUM_STATES << "ST";
     }
@@ -131,11 +130,11 @@ int main(int argc, char* argv[]) {
         cout << "\n--- Run " << run << " of " << RUNS << " ---" << endl;
 
         // 1. we define a problem
-        pagmo::problem p{sda_problem_nsga2(NUM_NODES, NUM_STATES, RUN_SIM, ISTOTINF_COST)};
+        pagmo::problem p{sda_problem_moead(NUM_NODES, NUM_STATES, RUN_SIM, ISTOTINF_COST)};
 
-        // 2. we tell pagmo to use NSGA2
+        // 2. we tell pagmo to use moead
         // nsga2(gen_per_step, cr, param_c, m, param_m)
-        pagmo::algorithm algo{pagmo::nsga2(1, CROSSOVER_RATE, ETA, MUTATION_RATE, ETA)};
+        pagmo::algorithm algo{pagmo::moead(1, "grid", "tchebycheff", 20, CROSSOVER_RATE, 0.5, ETA, 0.9, 2, true)};
 
         pagmo::archipelago archi;
         unsigned pop_per_island = POP_SIZE / NUM_ISLANDS;
@@ -186,7 +185,6 @@ int main(int argc, char* argv[]) {
             // go through the champs
             for (auto idx : best_front_indices) {
                 champions_fitness.push_back(fits[idx]);
-                std::cout << fits[idx][0] << ", " << fits[idx][1];
             }
 
             vector<double> cdValuesFiltered;

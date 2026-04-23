@@ -4,11 +4,11 @@ import pandas as pd
 from graphviz import Graph
 
 
-RUN_NAME = "Output (NSGA2 - spread vs cost) - 96PS, 20000Mevs, 2.7%MuR, 99%CrR, 2ETA, 1Islands, 30SEpis, 12ST"
+RUN_NAME = "Output (NSGA2 - spread vs cost) - 496PS, 20000Mevs, 2.7%MuR, 99%CrR, 2ETA, 1Islands, 30SEpis, 12ST"
 
 
 BASE_INPUT_DIR = "cmake-build-release-wsl/Output"
-BASE_OUTPUT_DIR = "GraphOutput"
+BASE_OUTPUT_DIR = "GraphOutputAdditional"
 
 '''
 For a particular folder we need to:
@@ -125,7 +125,7 @@ def make_graph(el, out_file: str, verts: int, out_dir: str):
 
 def main():
 
-    csv_file_path = os.path.join(BASE_INPUT_DIR, RUN_NAME, "best_run_networks.csv")
+    csv_file_path = os.path.join(BASE_INPUT_DIR, RUN_NAME, "2best_run_networks.csv")
 
     target_output_folder = os.path.join(BASE_OUTPUT_DIR, RUN_NAME)
 
@@ -139,7 +139,7 @@ def main():
         df_sorted = df.sort_values(by="Edges", ascending=False).reset_index(drop=True)
 
         # save the sorted dataframe as a new csv overview
-        sorted_csv_path = os.path.join(target_output_folder, "best_run_networks_sorted.csv")
+        sorted_csv_path = os.path.join(target_output_folder, "2best_run_networks_sorted.csv")
 
         df_sorted.to_csv(sorted_csv_path, sep=";", index=False)
         print(f"Saved sorted CSV overview to: {sorted_csv_path}")

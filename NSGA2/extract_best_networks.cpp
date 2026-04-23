@@ -12,7 +12,6 @@
 
 using namespace std;
 
-
 std::mt19937 rng;
 
 // params for the sda
@@ -53,12 +52,29 @@ vector<vector<double>> parseNestedTuples(const string& str) {
     return result;
 }
 
-int main() {
+struct RunData {
+    int run_id;
+    double hv;
+    string fitness_str;
+    string genes_str;
+};
+
+int main(int argc, char* argv[]) {
     cout << "=== NETWORK EXTRACTOR ===" << endl;
 
-    string targetFolder = "../cmake-build-release-wsl/Output/Output (NSGA2 - spread vs cost) - 96PS, 20000Mevs, 2.7%MuR, 99%CrR, 2ETA, 1Islands, 30SEpis, 12ST";
+    int target_rank = 1;
+    if (argc >= 2) {
+        target_rank = stoi(argv[1]);
+    }
+    cout << "Target Rank: " << target_rank << " (1=Best, 2=Second Best, etc.)" << endl;
+
+    string targetFolder = "../cmake-build-release-wsl/Output/Output (NSGA2 - spread vs cost) - 496PS, 20000Mevs, 2.7%MuR, 99%CrR, 2ETA, 1Islands, 30SEpis, 12ST";
     string inputFile = targetFolder + "/pareto_front_best.csv";
-    string outputFile = targetFolder + "/best_run_networks.csv";
+
+    // === GEÄNDERT: Dynamischer Dateiname basierend auf dem ausgewählten Platz ===
+    string fileName = to_string(target_rank) + "best_run_networks.csv";
+    string outputFile = targetFolder + "/" + fileName;
+    // ============================================================================
 
     ifstream infile(inputFile);
     if (!infile.is_open()) {
@@ -68,13 +84,9 @@ int main() {
     }
 
     string line;
-
     getline(infile, line);
 
-    double max_hv = -1.0;
-    string best_fitness_str = "";
-    string best_genes_str = "";
-    int best_run = -1;
+    vector<RunData> all_runs;
 
     // find run with best hv
     while (getline(infile, line)) {
@@ -84,29 +96,36 @@ int main() {
         string token;
         vector<string> columns;
 
-
         while (getline(ss, token, ';')) {
             columns.push_back(token);
         }
 
         if (columns.size() >= 5) {
             double current_hv = stod(columns[1]);
-            if (current_hv > max_hv) {
-                max_hv = current_hv;
-                best_run = stoi(columns[0]);
-                best_fitness_str = columns[3]; // ParetoLength_Edges
-                best_genes_str = columns[4];   // SDA_Genes
-            }
+            all_runs.push_back({stoi(columns[0]), current_hv, columns[3], columns[4]});
         }
     }
     infile.close();
 
-    if (best_run == -1) {
-        cerr << "no data found..." << endl;
+    if (all_runs.empty() || target_rank > all_runs.size() || target_rank < 1) {
+        cerr << "no data found or invalid rank requested..." << endl;
         return 1;
     }
 
-    cout << ">>> Best Run found: Run " << best_run << " (Hypervolume: " << max_hv << ")" << endl;
+    // Sortiere absteigend nach Hypervolume (höchstes HV zuerst)
+    sort(all_runs.begin(), all_runs.end(), [](const RunData& a, const RunData& b) {
+        return a.hv > b.hv;
+    });
+
+    // Hole den gewünschten Run (Index 0 = Platz 1, Index 1 = Platz 2, ...)
+    RunData selected_run = all_runs[target_rank - 1];
+
+    int best_run = selected_run.run_id;
+    double max_hv = selected_run.hv;
+    string best_fitness_str = selected_run.fitness_str;
+    string best_genes_str = selected_run.genes_str;
+
+    cout << ">>> Run selected: Run " << best_run << " (Hypervolume: " << max_hv << ")" << endl;
 
     // 3. parse strings
     vector<vector<double>> best_fitness = parseNestedTuples(best_fitness_str);
@@ -144,7 +163,10 @@ int main() {
     }
 
     outfile.close();
-    cout << "=== Done! Datea saved in: best_run_networks.csv ===" << endl;
+
+    // === GEÄNDERT: Finale Ausgabe zeigt nun auch den richtigen Namen an ===
+    cout << "=== Done! Data saved in: " << fileName << " ===" << endl;
+    // ======================================================================
 
     return 0;
 }
