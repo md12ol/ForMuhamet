@@ -4,6 +4,6 @@
 #ifndef SDA_RNG_H
 #define SDA_RNG_H
 
-extern std::mt19937 rng;    // Random Number Generator
+extern thread_local std::mt19937 rng;    // Random Number Generator
 
 #endif //SDA_RNG_H

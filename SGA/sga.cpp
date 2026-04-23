@@ -26,7 +26,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-std::mt19937 rng;
+thread_local std::mt19937 rng;
 
 
 // params identical to og code

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30.5)
+cmake_minimum_required(VERSION 3.28.3)
 project(ForMuhamet)
 
 # Set C++ standard
@@ -20,7 +20,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #        constants.h
 #)
 
-find_package(Pagmo CONFIG REQUIRED)
+if(_hostname STREQUAL "MDUBE-Lenovo")
+    set(pagmo_DIR "/home/mdube/miniconda3/lib/cmake/pagmo")
+    set(Eigen3_DIR "/home/mdube/miniconda3/share/eigen3/cmake")
+    set(Boost_DIR "/home/mdube/miniconda3/lib/cmake/Boost-1.88.0")
+    set(NLopt_DIR "/home/mdube/miniconda3/lib/cmake/nlopt")
+    set(PAGMO_IPOPT_INCLUDE_DIR "/home/mdube/miniconda3/include/coin-or" CACHE PATH "" FORCE)
+    set(TBB_DIR "/home/mdube/miniconda3/lib/cmake/TBB")
+endif()
+
+find_package(pagmo CONFIG REQUIRED)
 
 add_executable(pagmo_test pagmoTest.cpp)
 target_link_libraries(pagmo_test PRIVATE Pagmo::pagmo)

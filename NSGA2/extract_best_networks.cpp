@@ -14,6 +14,9 @@ using namespace std;
 
 std::mt19937 rng;
 
+// thread_local std::mt19937 rng;
+// 9b1a31606c986806e24277a20a4846c509542950
+
 // params for the sda
 const int NUM_NODES = 256;
 const int NUM_STATES = 12;
